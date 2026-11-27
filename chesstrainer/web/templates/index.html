@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Warm-up · REBLUNDER{% endblock %}
+{% block body %}
+<div class="stage trainer">
+  <div class="tabs" id="mode" aria-label="Trainingsart">
+      <a href="/" data-mode="mixed">Eigene Fehler</a>
+      <a href="/?mode=opening" data-mode="opening">Eröffnungstraining</a>
+      <a href="/?mode=repertoire" data-mode="repertoire">Repertoire</a>
+    </div>
+  <div class="board-col">
+    <div id="board"></div>
+    <div class="board-tools">
+      <span class="mouse-only">Rechtsklick und ziehen zeichnet Pfeile, ein Linksklick löscht sie.</span>
+      <button id="arrow-mode" class="touch-only" aria-pressed="false">Pfeile zeichnen</button>
+    </div>
+  </div>
+
+  <div class="side">
+    <p id="loading" class="skeleton">Puzzles werden geladen</p>
+
+    <div id="empty" class="empty" hidden>
+      <h1>Noch keine Puzzles</h1>
+      <div id="empty-job" hidden></div>
+      <p id="empty-text">Lade zuerst deine Partien und analysiere sie mit <code>python -m chesstrainer update --user NAME</code> oder über „Aktualisieren“.</p>
+    </div>
+
+    <div id="task" hidden>
+      <div class="progress" id="progress" role="img"></div>
+      <p class="kicker" id="kicker"></p>
+      <h1 class="turn"><i id="turn-i"></i><span id="prompt"></span></h1>
+      <p class="meta" id="meta"></p>
+      <p class="msg" id="msg" role="status"></p>
+      <div class="actions">
+        <button id="next" class="primary" hidden>Weiter</button>
+        <button id="give-up" class="quiet">Lösung zeigen</button>
+      </div>
+      <div id="reveal"></div>
+      <div id="lines" class="lines" hidden>
+        <div class="line-row" data-line="best"><div class="line-head"><span>Beste Fortsetzung</span><span class="ev" id="ev-best"></span></div><div class="mvs" id="mv-best"></div></div>
+        <div class="line-row" data-line="your"><div class="line-head"><span>Nach deinem Zug</span><span class="ev" id="ev-your"></span></div><div class="mvs" id="mv-your"></div></div>
+        <div class="line-ctrl">
+          <button id="ln-start">Anfang</button>
+          <button id="ln-prev" title="Pfeiltaste links">Zurück</button>
+          <button id="ln-next" title="Pfeiltaste rechts">Vor</button>
+          <button id="ln-play">Abspielen</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="done" hidden>
+      <p class="kicker">Warm-up beendet</p>
+      <h1 id="done-head"></h1>
+      <table id="summary" style="margin-top: 24px"></table>
+      <div class="actions"><button id="again" class="primary">Noch eine Runde</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='board.js') }}"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

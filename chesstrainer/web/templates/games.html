@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "_games.html" import games_table %}
+{% block title %}Alle Partien · REBLUNDER{% endblock %}
+{% block body %}
+<div class="page-head">
+  <p class="kicker"><a class="textlink" href="/report">Partieanalyse</a></p>
+  <h1>Alle {{ games|length }} Partien</h1>
+  <p class="lede">Fehler zählt Züge mit mindestens 10 Prozentpunkten Verlust an Gewinnchance. „Teuerster“ ist der größte einzelne Verlust.</p>
+</div>
+{% if games %}{{ games_table(games) }}{% else %}<div class="empty"><h2>Noch keine analysierten Partien</h2></div>{% endif %}
+{% endblock %}

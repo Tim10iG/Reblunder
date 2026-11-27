@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Fortschritt · REBLUNDER{% endblock %}
+{% set word = {'better': 'besser', 'worse': 'schlechter', 'same': 'gleich', 'na': ''} %}
+{% set arrow = {'better': '▲', 'worse': '▼', 'same': '●', 'na': ''} %}
+{% macro trend(rows) %}
+<div class="scroll-x"><table class="trend">
+  <tr><th>Fehler</th><th class="num">vorher</th><th class="num">zuletzt</th><th class="hide-sm">pro 10 Partien</th><th>Trend</th></tr>
+  {% for d in rows %}
+  <tr data-tip="{{ d.title }}: {{ '%.1f'|format(d.prev) }} → {{ '%.1f'|format(d.recent) }} pro 10 Partien ({{ d.total }} Fälle in beiden Zeiträumen)">
+    <td>{{ d.title }}</td>
+    <td class="num">{{ '%.1f'|format(d.prev) }}</td>
+    <td class="num"><b>{{ '%.1f'|format(d.recent) }}</b></td>
+    <td class="pair hide-sm"><span class="pb prev" style="width: {{ (d.prev / o.trend_max * 100)|round(1) }}%"></span>
+        <span class="pb now" style="width: {{ (d.recent / o.trend_max * 100)|round(1) }}%"></span></td>
+    <td class="v-{{ d.verdict }}">{{ {'better': '▼ seltener', 'worse': '▲ häufiger', 'same': '● gleich'}[d.verdict] }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endmacro %}
+{% block body %}
+{% if not o.games or not o.get('metrics') %}
+  <div class="empty"><h2>Noch zu wenige Partien</h2>
+  <p>Für einen Vergleich brauche ich mindestens {{ o.min_games }} analysierte Partien ({{ o.games }} vorhanden).</p></div>
+{% else %}
+<div class="page-head"><h1>Wirst du besser?</h1>
+  <p class="lede">Deine letzten {{ o.window }} Partien ({{ o.span.recent_from|day }} – {{ o.span.recent_to|day }}) gegen die {{ o.window }} davor ({{ o.span.prev_from|day }} – {{ o.span.prev_to|day }})</p>
+</div>
+<section class="rp">
+  <ol class="insights">{% for i in o.insights %}<li>{{ i }}</li>{% endfor %}</ol>
+  <div class="tiles" style="margin-top: 32px">
+    {% for m in o.metrics %}
+    <div class="tile" data-tip="{{ m.tip }}">
+      <div class="v">{{ m.recent }}</div>
+      <div class="k">{{ m.label }}</div>
+      <div class="delta v-{{ m.verdict }}">{{ arrow[m.verdict] }} {{ word[m.verdict] }}
+        <span class="was">vorher {{ m.prev }}</span></div>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="note">Unterschiede unter 10 % zählen als „gleich“. {{ o.window }} Partien pro Zeitraum sind wenig: einzelne schlechte Tage verschieben die Werte spürbar.</p>
+</section>
+
+{% if o.rating %}
+<section class="rp"><h2>Wertung</h2>
+  <p class="sub">Chess.com-Wertung ({{ o.rating.time_class }}) nach jeder Partie · {{ o.rating.first }} → {{ o.rating.last }}, Höchststand {{ o.rating.best }}</p>
+  <div class="linechart">
+    <svg viewBox="-56 -14 {{ o.rating.width + 76 }} {{ o.rating.height + 44 }}" role="img" aria-label="Wertungsverlauf">
+      <rect class="band" x="{{ o.rating.recent_x }}" y="0" width="{{ o.rating.width - o.rating.recent_x }}" height="{{ o.rating.height }}"/>
+      <text class="band-l" x="{{ o.rating.recent_x + 8 }}" y="14">letzte {{ o.window }} Partien</text>
+      {% for t in o.rating.ticks %}<line class="grid" x1="0" x2="{{ o.rating.width }}" y1="{{ t.y }}" y2="{{ t.y }}"/>
+      <text class="tick" x="-10" y="{{ t.y + 4 }}" text-anchor="end">{{ t.v }}</text>{% endfor %}
+      <polyline class="ln" points="{{ o.rating.path }}"/>
+      {% set last = o.rating.points[-1] %}
+      <circle class="end" cx="{{ last.x }}" cy="{{ last.y }}" r="5"/>
+      <text class="end-l" x="{{ last.x - 8 }}" y="{{ last.y - 12 }}" text-anchor="end">{{ last.rating }}</text>
+      {% for p in o.rating.points %}<circle class="hit" cx="{{ p.x }}" cy="{{ p.y }}" r="9"
+        data-tip="Partie {{ p.n }} · {{ p.end_time|day }} · Wertung {{ p.rating }}"/>{% endfor %}
+      <text class="tick" x="0" y="{{ o.rating.height + 22 }}">Partie 1</text>
+      <text class="tick" x="{{ o.rating.width }}" y="{{ o.rating.height + 22 }}" text-anchor="end">Partie {{ o.rating.points|length }}</text>
+    </svg>
+  </div>
+</section>
+{% endif %}
+
+{% if o.blocks|length > 1 %}
+<section class="rp"><h2>Fehlerquote über die Zeit</h2>
+  <p class="sub">Fehler und Patzer pro 100 Züge, in Blöcken von 10 Partien (älteste links)</p>
+  {% set tmax = o.blocks|map(attribute='rate')|max or 1 %}
+  <div class="cols">
+  {% for t in o.blocks %}
+    <div class="c" data-tip="{{ t.label }}: {{ '%.1f'|format(t.rate) }} pro 100 Züge">
+      <span class="cv">{{ '%.1f'|format(t.rate) }}</span>
+      <div class="colbar" style="height: {{ (t.rate / tmax * 78)|round(1) }}%"></div></div>
+  {% endfor %}
+  </div>
+  <div class="cols-x">{% for t in o.blocks %}<div>{{ loop.index }}</div>{% endfor %}</div>
+</section>
+{% endif %}
+
+<section class="rp"><h2>Machst du die gleichen Fehler wieder?</h2>
+  <p class="sub">Wie oft jeder Fehlertyp pro 10 Partien vorkommt: die {{ o.window }} Partien davor gegen die letzten {{ o.window }}</p>
+  <div class="legend"><span><i class="prev"></i>vorher</span><span><i class="now"></i>zuletzt</span></div>
+  {{ trend(o.motifs) }}
+  {% if o.situations %}<h3 class="h3">Nach Situation</h3>{{ trend(o.situations) }}{% endif %}
+  <p class="note">Nur Fehlertypen mit mindestens 4 Fällen. „Seltener“ oder „häufiger“ erst ab einer Änderung von 0,8 pro 10 Partien und 10 %.</p>
+</section>
+
+<section class="rp"><h2>Dieselbe Stellung, derselbe Fehler</h2>
+  {% if o.repeats %}
+  <p class="sub">Eröffnungsstellungen, die du mindestens zweimal falsch behandelt hast, und was in den letzten {{ o.window }} Partien passiert ist</p>
+  <div class="legend"><span><i class="red"></i>dein Zug</span><span><i class="green"></i>besserer Zug</span></div>
+  <div class="ex-group" data-src="repeats" data-kind="repeat"></div>
+  {% else %}<p class="sub">Keine Eröffnungsstellung, die du mehrfach falsch behandelt hast.</p>{% endif %}
+</section>
+
+<section class="rp"><h2>Training</h2>
+  <p class="sub">Puzzles aus deinen Fehlern</p>
+  {% set t = o.training %}
+  <div class="tiles" style="margin:0">
+    <div class="tile"><div class="v">{{ t.trained }} / {{ t.total }}</div><div class="k">Puzzles mindestens einmal geübt</div></div>
+    <div class="tile"><div class="v">{{ ('%.0f'|format(100 * t.first_ok / t.first_n) ~ ' %') if t.first_n else '–' }}</div><div class="k">beim ersten Sehen richtig</div></div>
+    <div class="tile"><div class="v">{{ ('%.0f'|format(100 * t.again_ok / t.again_n) ~ ' %') if t.again_n else '–' }}</div><div class="k">bei Wiederholung richtig ({{ t.again_n }}×)</div></div>
+    <div class="tile"><div class="v">{{ t.learned }}</div><div class="k">gefestigt (2× in Folge richtig)</div></div>
+    <div class="tile"><div class="v">{{ t.stubborn }}</div><div class="k">hartnäckig (≥ 2× falsch)</div></div>
+  </div>
+  {% if t.attempts < 20 %}<p class="note">{% if t.attempts == 1 %}Erst 1 Versuch{% else %}Erst {{ t.attempts }} Versuche{% endif %}: Diese Zahlen werden nach ein paar Warm-ups aussagekräftig.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if o.get('repeats') %}
+<script>window.EXAMPLES = { "repeats": {{ o.repeats|tojson }} };</script>
+<script src="{{ url_for('static', filename='board.js') }}"></script>
+<script src="{{ url_for('static', filename='examples.js') }}"></script>
+{% endif %}
+{% endblock %}

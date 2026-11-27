@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% set bare = true %}
+{% block title %}REBLUNDER · Lerne aus deinen eigenen Fehlern{% endblock %}
+{% block body %}
+<section class="landing">
+  <img class="landing-mark" src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" width="72" height="72">
+  <h1>Lerne aus deinen<br>eigenen Fehlern.</h1>
+  <p class="lead">Gib deinen Chess.com-Namen ein. REBLUNDER analysiert deine letzten Partien mit Stockfish, findet die Muster hinter deinen Patzern und stellt dir vor jeder Partie fünf Puzzles aus genau diesen Stellungen.</p>
+
+  <form class="enter" method="post" action="/enter" autocomplete="off">
+    <label for="username">Chess.com-Benutzername</label>
+    <div class="enter-row">
+      <input id="username" name="username" type="text" value="{{ name }}" placeholder="z. B. MagnusCarlsen" required minlength="3" maxlength="25"
+             autocapitalize="none" autocorrect="off" spellcheck="false" autofocus aria-describedby="enter-msg">
+      <button class="primary" type="submit">Analysieren</button>
+    </div>
+    <p id="enter-msg" class="msg{{ ' bad' if error }}" role="{{ 'alert' if error else 'status' }}">{{ error or notice or '' }}</p>
+  </form>
+
+  <ul class="facts">
+    <li><b>Kein Konto, kein Passwort.</b> Es werden nur deine öffentlichen Partien gelesen.</li>
+    <li><b>Dauert ein paar Minuten.</b> Du siehst den Fortschritt und kannst die Seite offen lassen.</li>
+    <li><b>Jederzeit löschbar.</b> Mit einem Klick sind alle deine Daten weg. <a class="textlink" href="/privacy">Datenschutz</a></li>
+  </ul>
+</section>
+{% endblock %}

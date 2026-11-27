@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="REBLUNDER">
+<meta name="application-name" content="REBLUNDER">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>{% block title %}REBLUNDER{% endblock %}</title>
+<link rel="manifest" href="{{ url_for('manifest') }}">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='icon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="glow" aria-hidden="true"></div>
+{% set path = request.path %}
+<header class="top">
+  <a class="brand" href="/" aria-label="REBLUNDER, zur Startseite"><span class="wm"><b>RE</b>BLUNDER</span></a>
+  {% if not bare %}
+  <nav class="nav" aria-label="Hauptnavigation">
+    <a href="/" class="{{ 'on' if path == '/' }}" {% if path == '/' %}aria-current="page"{% endif %}>Warm-up</a>
+    <a href="/report" class="{{ 'on' if path.startswith('/report') or path.startswith('/game') }}">Partieanalyse</a>
+    <a href="/openings" class="{{ 'on' if path.startswith('/openings') }}">Eröffnungen</a>
+    <a href="/progress" class="{{ 'on' if path.startswith('/progress') }}">Fortschritt</a>
+  </nav>
+  <div class="top-right">
+    <span class="status" id="status" role="status"></span>
+    <button id="sync-btn" title="Neue Partien laden und analysieren">Aktualisieren</button>
+  </div>
+  {% endif %}
+</header>
+<main>{% block body %}{% endblock %}
+{% if login_enabled and not bare %}<form method="post" action="/logout" style="margin-top: 64px"><button class="quiet" type="submit">Abmelden</button></form>{% endif %}
+</main>
+<footer class="foot">
+  {% if multi %}<span>REBLUNDER</span>
+  {% if me and not bare %}<span>Angemeldet als <b>{{ me }}</b></span>
+  <form method="post" action="/leave"><button class="linklike" type="submit">Abmelden</button></form>{% endif %}
+  <a href="/privacy">Datenschutz</a>{% endif %}
+  <span class="langs" role="group" aria-label="Sprache">{% for c, n in langs %}<a href="/lang/{{ c }}" lang="{{ c }}" hreflang="{{ c }}"{% if c == lang %} class="on" aria-current="true"{% endif %}>{{ n }}</a>{% endfor %}</span>
+</footer>
+<div id="tip"></div>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});</script>
+<script>window.LANG = "{{ lang }}"; window.I18N = {{ i18n|tojson }};
+window.t = (k, p) => { let s = window.I18N[k] !== undefined ? window.I18N[k] : k; return p ? s.replace(/\{(\w+)\}/g, (m, n) => (n in p ? p[n] : m)) : s; };</script>
+<script>window.MULTI = {{ 'true' if multi else 'false' }};</script>
+<script>window.PIECE_BASE = "{{ url_for('static', filename='pieces/') }}";</script>
+{% if not bare %}<script src="{{ url_for('static', filename='common.js') }}"></script>{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

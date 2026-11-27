@@ -1,0 +1,30 @@
+# Öffentlicher Mehrspieler-Betrieb: jeder gibt seinen Chess.com-Namen ein.
+# Vorher: Domain auf die Server-IP zeigen lassen und den Namen in der Caddyfile eintragen.
+#   docker compose -f docker-compose.public.yml up -d --build
+services:
+  reblunder:
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "chesstrainer", "serve", "--host", "0.0.0.0", "--multi", "--workers", "2"]
+    environment:
+      CHESSTRAINER_PROXY: "1"            # hinter Caddy: echte Besucher-Adresse und https übernehmen
+      CHESSTRAINER_HTTPS: "1"            # Cookie nur über https senden
+      CHESSTRAINER_CONTACT: "deine@mail.de"   # steht auf der Datenschutzseite und im User-Agent für Chess.com
+      CHESSTRAINER_DATA_DIR: /app/data
+    volumes:
+      - ./data:/app/data
+    expose:
+      - "5000"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - reblunder
+volumes:
+  caddy_data:

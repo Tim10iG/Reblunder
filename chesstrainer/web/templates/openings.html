@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Eröffnungen · REBLUNDER{% endblock %}
+{% macro side(s, key, label) %}
+<section class="rp">
+  <h2>{{ label }}</h2>
+  <p class="sub">{{ s.games }} Partien · deine ersten {{ o.opening_moves }} Züge</p>
+  <div class="tiles">
+    <div class="tile"><div class="v">{{ '%.0f'|format(s.score) }} %</div><div class="k">der Punkte geholt</div></div>
+    <div class="tile"><div class="v">{{ '%.1f'|format(s.err_per_game) }}</div><div class="k">Eröffnungsfehler pro Partie</div></div>
+    <div class="tile"><div class="v">{{ ('%.0f'|format(s.exit_win) ~ ' %') if s.exit_win is not none else '–' }}</div><div class="k">Ø Gewinnchance nach Zug {{ o.opening_moves }}</div></div>
+    <div class="tile"><div class="v">{{ s.leaks|length }}</div><div class="k">wiederkehrende Fehlerstellungen</div></div>
+  </div>
+
+  <h3 class="h3">Was du spielst</h3>
+  {% set mx = s.families|map(attribute='err_per_game')|max or 1 %}
+  <div class="scroll-x"><table class="op">
+    <tr><th>Eröffnung</th><th class="num">Partien</th><th class="num">Punkte</th><th>Fehler pro Partie</th>
+        <th class="num">Ø nach Zug {{ o.opening_moves }}</th></tr>
+    {% for f in s.families %}
+    <tr class="{{ 'main' if loop.first else '' }}"
+        data-tip="{{ f.family }}: {{ f.wins }} Siege, {{ f.draws }} Remis, {{ f.losses }} Niederlagen. {{ f.errors }} Fehler/Patzer in den ersten {{ o.opening_moves }} Zügen.">
+      <td>{{ f.family }}
+        {% if f.variations|length > 1 or f.variations[0].name != f.family %}<div class="var">{% for v in f.variations %}{{ v.name|replace(f.family ~ ' ', '') }} ({{ v.n }}){{ ', ' if not loop.last }}{% endfor %}</div>{% endif %}</td>
+      <td class="num">{{ f.games }}</td>
+      <td class="num">{{ '%.0f'|format(f.score) }} %<span class="wdl">{{ f.wins }}/{{ f.draws }}/{{ f.losses }}</span></td>
+      <td><span class="mini" style="width: {{ (f.err_per_game / mx * 90)|round(0) }}px"></span>{{ '%.1f'|format(f.err_per_game) }}</td>
+      <td class="num">{{ ('%.0f'|format(f.exit_win) ~ ' %') if f.exit_win is not none else '–' }}</td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  <p class="note">Punkte: Sieg 1, Remis ½ (Siege/Remis/Niederlagen). „Ø nach Zug {{ o.opening_moves }}“: Gewinnchance laut Stockfish nach deinem {{ o.opening_moves }}. Zug, 50 % = ausgeglichen. Bei wenigen Partien sind die Werte nur ein Hinweis.</p>
+
+  <h3 class="h3">Wiederkehrende Fehlerstellungen</h3>
+  {% if s.leaks %}
+  <p class="sub">Stellungen, die du mehrfach auf dem Brett hattest und in denen dein Zug Gewinnchance kostet. Zahl in Klammern: Ø Verlust in Prozentpunkten.</p>
+  <div class="legend"><span><i class="red"></i>dein Zug</span><span><i class="green"></i>besserer Zug</span></div>
+  <div class="ex-group" data-src="leak:{{ key }}" data-kind="leak"></div>
+  {% else %}<p class="sub">Keine Stellung, die du mehrfach erreicht und dabei spürbar verloren hast.</p>{% endif %}
+
+  <h3 class="h3">Einzelne Eröffnungsfehler</h3>
+  {% if s.singles %}
+  <p class="sub">{{ s.n_singles }} Fehler und Patzer in den ersten {{ o.opening_moves }} Zügen, neueste zuerst</p>
+  <details class="ex"><summary><span>Stellungen anzeigen</span><span class="n">{{ s.singles|length }}</span></summary>
+    <div class="ex-group" data-src="single:{{ key }}" data-kind="opening"></div></details>
+  {% else %}<p class="sub">Keine.</p>{% endif %}
+</section>
+{% endmacro %}
+{% block body %}
+{% if not o.games %}
+  <div class="empty"><h2>Noch keine analysierten Partien</h2>
+  <p><code>python -m chesstrainer update --user DEIN_CHESSCOM_NAME</code></p></div>
+{% else %}
+<div class="page-head">
+  <h1>Dein Repertoire in den ersten zehn Zügen</h1>
+  <p class="lede">Was du mit Weiß und Schwarz spielst, wie du aus der Eröffnung kommst und wo sich Fehler wiederholen.</p>
+  <div class="cta"><a class="btn primary" href="/?mode=opening">Eröffnungstraining starten</a>
+    <span class="muted">Fünf Stellungen aus deinen eigenen Eröffnungsfehlern.</span></div>
+  <div class="cta"><a class="btn" href="/?mode=repertoire">Repertoire üben</a>
+    <span class="muted">{{ rep.total }} Schlüsselstellungen für dein Repertoire, {{ rep.learned }} gelernt, {{ rep.due }} fällig.</span></div>
+</div>
+{% if o.insights %}<section class="rp"><ol class="insights">{% for i in o.insights %}<li>{{ i }}</li>{% endfor %}</ol></section>{% endif %}
+<section class="rp">
+  <p class="kicker">Repertoire-Drills</p>
+  <h2>Stellungen, die du sicher kennen solltest</h2>
+  <p class="sub">Ausgewählt aus Fehlern, die sich in deinen Partien wiederholen, und mit Stockfish geprüft. Im Training kommen sie nach demselben Rhythmus wieder wie die Puzzles.</p>
+  <div class="scroll-x"><table>
+    <tr><th>Eröffnung</th><th>Stellung</th><th class="hide-sm">Thema</th><th>Stand</th></tr>
+    {% for d in drills %}<tr><td>{{ d.group }}</td><td class="mono" style="font-size: 13px">{{ d.moves }}</td>
+      <td class="hide-sm">{{ d.title }}</td>
+      <td class="{{ 'v-better' if d.state == 'learned' else 'v-worse' if d.state == 'due' else 'v-same' }}">{{ {'learned': 'gelernt', 'due': 'fällig', 'new': 'neu', 'work': 'in Arbeit'}[d.state] }}</td></tr>{% endfor %}
+  </table></div>
+</section>
+{{ side(o.white, 'white', 'Mit Weiß') }}
+{{ side(o.black, 'black', 'Mit Schwarz') }}
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if o.games %}
+<script>
+window.EXAMPLES = {
+  "leak:white": {{ o.white.leaks|tojson }}, "leak:black": {{ o.black.leaks|tojson }},
+  "single:white": {{ o.white.singles|tojson }}, "single:black": {{ o.black.singles|tojson }}
+};
+</script>
+<script src="{{ url_for('static', filename='board.js') }}"></script>
+<script src="{{ url_for('static', filename='examples.js') }}"></script>
+{% endif %}
+{% endblock %}

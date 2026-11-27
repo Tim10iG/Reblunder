@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% from "_games.html" import games_table %}
+{% block title %}Partieanalyse · REBLUNDER{% endblock %}
+{% macro bars(items, max) %}
+  <div class="bars">
+  {% for d in items %}
+    <div class="row" data-tip="{{ d.label }}: {{ '%.1f'|format(d.rate) }} Fehler pro 100 Züge ({{ d.bad }} von {{ d.n }} Zügen)">
+      <div class="lbl">{{ d.label }}</div>
+      <div class="track"><div class="bar" style="width: {{ (d.rate / max * 100)|round(1) }}%; max-width: calc(100% - 60px)"></div>
+        <span class="val">{{ '%.1f'|format(d.rate) }}</span></div>
+    </div>
+  {% endfor %}
+  </div>
+{% endmacro %}
+{% macro examples(groups, prefix, open_first=True) %}
+  {% for g in groups %}
+  <details class="ex" {{ 'open' if open_first and loop.first else '' }}>
+    <summary><span>{{ g.title }}</span><span class="n">{{ g.total }}</span></summary>
+    {% if g.hint %}<p class="hint">{{ g.hint }}</p>{% endif %}
+    <div class="ex-group" data-src="{{ prefix }}:{{ g.key }}" data-kind="mistake"></div>
+  </details>
+  {% endfor %}
+{% endmacro %}
+{% block body %}
+{% if not r.moves %}
+  <div class="empty"><h1>Noch keine analysierten Partien</h1>
+  <p>Lade deine Partien mit <code>python -m chesstrainer update --user NAME</code> oder über „Aktualisieren“.</p></div>
+{% else %}
+<div class="page-head">
+  <h1>Was deine {{ r.games }} Partien zeigen</h1>
+  <p class="lede">{{ r.moves }} eigene Züge, darunter {{ r.mistakes }} Fehler und {{ r.blunders }} Patzer. Das sind
+    <span class="mono">{{ '%.1f'|format(r.rate) }}</span> pro 100 Züge oder <span class="mono">{{ '%.1f'|format(r.per_game) }}</span> pro Partie.</p>
+</div>
+
+<section class="rp"><h2>Letzte Partien</h2>
+  <p class="sub">Öffne eine Partie, um jeden Fehler am Brett zu sehen.</p>
+  {{ games_table(recent) }}
+  <p style="margin-top: 16px"><a class="textlink" href="/games">Alle {{ r.games }} Partien</a></p>
+</section>
+
+{% if r.insights %}
+<section class="rp"><h2>Wiederkehrende Muster</h2>
+  <ol class="insights" style="margin-top: 16px">{% for i in r.insights %}<li>{{ i }}</li>{% endfor %}</ol>
+</section>
+{% endif %}
+
+<section class="rp"><h2>Fehlertypen</h2>
+  <p class="sub">Wie oft jedes Muster in deinen Fehlern vorkommt. Ein Fehler kann mehrere Muster haben.</p>
+  <div class="bars">
+  {% set mx = r.motifs[0].count if r.motifs else 1 %}
+  {% for m in r.motifs %}
+    <div class="row" data-tip="{{ m.hint }}">
+      <div class="lbl">{{ m.title }}</div>
+      <div class="track"><div class="bar" style="width: {{ (m.count / mx * 100)|round(1) }}%; max-width: calc(100% - 90px)"></div>
+        <span class="val">{{ m.count }} · {{ '%.0f'|format(m.share) }} %</span></div>
+    </div>
+  {% endfor %}
+  </div>
+</section>
+
+<section class="rp"><h2>Stellungen nach Fehlertyp</h2>
+  <p class="sub">Die neuesten Fälle, jeweils die Stellung vor deinem Zug. Die Zahl rechts ist die Anzahl der Fehler dieses Typs.</p>
+  <div class="legend"><span><i class="red"></i>dein Zug</span><span><i class="green"></i>besserer Zug</span></div>
+  {{ examples(r.examples.motifs, 'm') }}
+</section>
+
+<section class="rp"><h2>Wann die Fehler passieren</h2>
+  <p class="sub">Fehler und Patzer pro 100 eigene Züge, überall auf derselben Skala.</p>
+  {% set allr = (r.phase + r.tempo + r.position + r.color) | map(attribute='rate') | max %}
+  <div class="grp"><h3>Spielphase</h3>{{ bars(r.phase, allr) }}</div>
+  {% if r.tempo|length > 1 %}<div class="grp"><h3>Tempo</h3>{{ bars(r.tempo, allr) }}</div>{% endif %}
+  <div class="grp"><h3>Stellung vor dem Zug</h3>{{ bars(r.position, allr) }}</div>
+  <div class="grp"><h3>Farbe</h3>{{ bars(r.color, allr) }}</div>
+  {% if r.time %}<p class="note">Bedenkzeit im Median: {{ '%.0f'|format(r.time.median_bad) }} s bei Fehlzügen, {{ '%.0f'|format(r.time.median_all) }} s bei allen Zügen.</p>{% endif %}
+</section>
+
+{% if r.examples.situations %}
+<section class="rp"><h2>Stellungen nach Situation</h2>
+  <p class="sub">Fehler, die mit Tempo oder Spielstand zusammenhängen.</p>
+  {{ examples(r.examples.situations, 'c', False) }}
+</section>
+{% endif %}
+
+<section class="rp"><h2>Fehlerbibliothek exportieren</h2>
+  <p class="sub">Alle {{ r.mistakes + r.blunders }} Fehler mit Stellung, besserem Zug, Variante und Fehlertyp.</p>
+  <div class="cta" id="export">
+    <a class="btn" href="/export/mistakes.csv" download>Als Tabelle (CSV)</a>
+    <a class="btn" href="/export/mistakes.pgn" download>Als PGN mit Varianten</a>
+    <span class="muted" id="export-msg" role="status"></span>
+  </div>
+  <details class="tbl" style="margin-top: 32px"><summary>Zahlen als Tabelle</summary>
+    <table><tr><th>Gruppe</th><th class="num">Züge</th><th class="num">Fehler</th><th class="num">pro 100</th></tr>
+    {% for grp in [r.phase, r.tempo, r.position, r.color] %}{% for d in grp %}
+      <tr><td>{{ d.label }}</td><td class="num">{{ d.n }}</td><td class="num">{{ d.bad }}</td><td class="num">{{ '%.1f'|format(d.rate) }}</td></tr>{% endfor %}{% endfor %}
+    {% for m in r.motifs %}<tr><td>{{ m.title }}</td><td class="num"></td><td class="num">{{ m.count }}</td><td class="num"></td></tr>{% endfor %}</table></details>
+  <p class="note">Fehler: Verlust von mindestens 10 Prozentpunkten Gewinnchance laut Stockfish, Patzer ab 20. Entschiedene Stellungen (unter 8 % oder über 92 %) zählen nicht. Die Fehlertypen bestimmt eine Regel-Heuristik.</p>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if r.moves %}
+<script>
+window.EXAMPLES = {};
+{% for g in r.examples.motifs %}window.EXAMPLES["m:{{ g.key }}"] = {{ g.cards|tojson }};
+{% endfor %}{% for g in r.examples.situations %}window.EXAMPLES["c:{{ g.key }}"] = {{ g.cards|tojson }};
+{% endfor %}
+// export feedback: confirm the download or report a failure
+document.querySelectorAll('#export a').forEach(a => a.addEventListener('click', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('export-msg');
+  msg.className = 'muted'; msg.textContent = 'Export wird erstellt …';
+  try {
+    const r = await fetch(a.href); if (!r.ok) throw new Error(r.status);
+    const blob = await r.blob(), url = URL.createObjectURL(blob), dl = document.createElement('a');
+    dl.href = url; dl.download = (r.headers.get('Content-Disposition') || '').split('filename="')[1]?.replace('"', '') || 'fehler';
+    document.body.append(dl); dl.click(); dl.remove(); URL.revokeObjectURL(url);
+    msg.className = 'v-better'; msg.textContent = 'Datei gespeichert.';
+  } catch (err) { msg.className = 'v-worse'; msg.textContent = 'Export fehlgeschlagen. Läuft der Server noch?'; }
+}));
+</script>
+<script src="{{ url_for('static', filename='board.js') }}"></script>
+<script src="{{ url_for('static', filename='examples.js') }}"></script>
+{% endif %}
+{% endblock %}

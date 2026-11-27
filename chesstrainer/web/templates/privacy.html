@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% set bare = true %}
+{% block title %}Datenschutz · REBLUNDER{% endblock %}
+{% block body %}
+<article class="prose">
+  <p class="kicker">REBLUNDER</p>
+  <h1>Datenschutz</h1>
+  <p class="lead">Kurz gesagt: REBLUNDER speichert nur, was du für die Analyse brauchst, und du kannst alles jederzeit löschen.</p>
+
+  <h2>Was gespeichert wird</h2>
+  <ul>
+    <li>Dein Chess.com-Benutzername, wie du ihn eingegeben hast.</li>
+    <li>Deine öffentlichen Partien der letzten Monate (Züge, Zeiten, Ergebnis, Gegnername und Wertungen) aus der öffentlichen Chess.com-Schnittstelle.</li>
+    <li>Die Ergebnisse der Analyse: Fehler, Fehlertypen, Puzzles und dein Lernfortschritt.</li>
+  </ul>
+  <p>Jeder Spieler hat seine eigene Datenbank. Es gibt keine Passwörter, keine E-Mail-Adressen und kein Tracking. Es werden keine Werbe- oder Analyse-Dienste eingebunden, und alle Schriften und Grafiken werden vom eigenen Server geladen.</p>
+
+  <h2>Cookie</h2>
+  <p>Ein einziges technisch notwendiges Cookie merkt sich, welcher Spieler du bist (60 Tage). Ohne dieses Cookie müsstest du bei jedem Besuch deinen Namen neu eingeben.</p>
+
+  <h2>Wer deine Analyse sehen kann</h2>
+  <p>Da es kein Passwort gibt, kann jede Person, die deinen Chess.com-Namen kennt, ihn eingeben und diese Analyse sehen. Das sind nur Auswertungen von Partien, die auf Chess.com ohnehin öffentlich sind. Wenn dir das nicht recht ist, lösche deine Daten (siehe unten).</p>
+
+  <h2>Weitergabe</h2>
+  <p>Die Daten werden nicht weitergegeben. REBLUNDER ruft nur die öffentliche Schnittstelle von Chess.com ab, um deine Partien zu laden. Dabei wird dein Benutzername an Chess.com übertragen.</p>
+
+  <h2 id="loeschen">Löschen</h2>
+  <p>Du kannst alle deine Daten jederzeit selbst löschen. {% if retention %}Außerdem werden Spieler, die {{ retention }} Tage lang nicht vorbeigeschaut haben, automatisch gelöscht.{% endif %}</p>
+  {% if me %}
+  <form method="post" action="/delete-me" class="danger-row">
+    <button class="danger" type="submit" onclick="return confirm('Alle Daten von {{ me }} unwiderruflich löschen?')">Alle Daten von {{ me }} löschen</button>
+  </form>
+  {% else %}
+  <p class="muted">Melde dich dafür mit deinem Namen an, dann erscheint hier der Löschen-Knopf.</p>
+  {% endif %}
+
+  <h2>Verantwortlich</h2>
+  <p>{% if contact %}{{ contact }}{% else %}Der Betreiber dieser Instanz hat noch keinen Kontakt hinterlegt.{% endif %}</p>
+
+  <h2>Quellen und Lizenzen</h2>
+  <p>REBLUNDER ist ein unabhängiges Projekt und gehört nicht zu Chess.com. Die Analyse nutzt die Schach-Engine Stockfish (GPL-3.0, <a class="textlink" href="https://stockfishchess.org">stockfishchess.org</a>). Die Figuren stehen unter CC BY-SA 3.0, die Schriften Inter und JetBrains Mono unter der SIL Open Font License.</p>
+  <p><a class="textlink" href="/">Zurück</a></p>
+</article>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set res = {'win': 'Sieg', 'loss': 'Niederlage', 'draw': 'Remis'}[g.result] or g.result %}
+{% block title %}{{ res }} gegen {{ g.opponent }} · REBLUNDER{% endblock %}
+{% block body %}
+<div class="stage">
+  <div class="board-col">
+    <div id="board"></div>
+    <div class="board-tools">
+      <span class="mouse-only">Pfeiltasten blättern durch die Partie. Rechtsklick und ziehen zeichnet Pfeile.</span>
+      <button id="arrow-mode" class="touch-only" aria-pressed="false">Pfeile zeichnen</button>
+    </div>
+  </div>
+  <div class="side">
+    <p class="kicker"><a class="textlink" href="/report">Partieanalyse</a> · {{ g.end_time|day }}</p>
+    <h1>{{ res }} gegen {{ g.opponent or '?' }}</h1>
+    <p class="meta">Du mit {{ 'Weiß' if g.color == 'white' else 'Schwarz' }}{% if g.rating %} (<span class="mono">{{ g.rating }}</span> gegen <span class="mono">{{ g.opp_rating }}</span>){% endif %} · {{ g.opening }}</p>
+
+    <svg class="evalgraph" id="graph" viewBox="0 0 100 100" preserveAspectRatio="none" role="img"
+         aria-label="Deine Gewinnchance im Partieverlauf"></svg>
+    <div class="board-tools" style="margin-top: 4px"><span>Deine Gewinnchance im Verlauf, Mitte = ausgeglichen</span><span class="mono" id="pos-label"></span></div>
+
+    <div class="line-ctrl" style="border-top: 0; padding-top: 16px">
+      <button id="g-start">Anfang</button><button id="g-prev">Zurück</button>
+      <button id="g-next" class="primary">Vor</button><button id="g-end">Ende</button>
+    </div>
+
+    {% if g.mistakes %}
+    <h3 class="h3" style="margin-top: 32px">{{ g.mistakes|length }} Fehler in dieser Partie</h3>
+    <ul class="mistakes" id="mistakes"></ul>
+    {% else %}<p class="meta" style="margin-top: 32px">Keine Fehler oder Patzer in dieser Partie.</p>{% endif %}
+
+    <div id="detail"></div>
+
+    <h3 class="h3">Züge</h3>
+    <div class="movelist" id="moves"></div>
+
+    <div class="pager">
+      {% if g.older %}<a class="textlink" href="/game/{{ g.older }}">Ältere Partie</a>{% endif %}
+      {% if g.newer %}<a class="textlink" href="/game/{{ g.newer }}">Neuere Partie</a>{% endif %}
+      {% if g.link %}<a class="textlink" href="{{ g.link }}" target="_blank" rel="noopener">Auf Chess.com öffnen</a>{% endif %}
+    </div>
+    <p class="links" id="analysis-row">Diese Stellung im Analysebrett: <span id="analysis"></span></p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>window.GAME = {{ g|tojson }};</script>
+<script src="{{ url_for('static', filename='board.js') }}"></script>
+<script src="{{ url_for('static', filename='game.js') }}"></script>
+{% endblock %}

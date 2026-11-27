@@ -1,0 +1,17 @@
+{% macro games_table(rows) %}
+<div class="scroll-x">
+<table class="games">
+  <tr><th>Partie</th><th class="hide-sm">Eröffnung</th><th>Ergebnis</th><th class="num">Fehler</th><th class="num">Teuerster</th></tr>
+  {% for g in rows %}
+  <tr class="link" data-href="/game/{{ g.n }}">
+    <td><a class="row" href="/game/{{ g.n }}"><span class="side-dot {{ g.color }}" title="{{ 'Weiß' if g.color == 'white' else 'Schwarz' }}"></span>{{ g.opponent or '?' }}
+      <span class="muted mono">{{ g.opp_rating or '' }}</span><br><span class="muted">{{ g.end_time|day }}</span></a></td>
+    <td class="hide-sm">{{ g.opening }}</td>
+    <td><span class="res {{ g.result }}"><i></i>{{ {'win': 'Sieg', 'loss': 'Niederlage', 'draw': 'Remis'}[g.result] or g.result }}</span></td>
+    <td class="num">{{ g.mistakes + g.blunders }}</td>
+    <td class="num">{{ ('−%.0f %%'|format(g.worst)) if g.worst else '–' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endmacro %}

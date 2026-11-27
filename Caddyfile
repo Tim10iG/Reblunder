@@ -1,0 +1,5 @@
+# Trage hier deine Domain ein. Caddy besorgt und erneuert das https-Zertifikat selbst.
+reblunder.duckdns.org {
+	encode zstd gzip
+	reverse_proxy reblunder:5000
+}

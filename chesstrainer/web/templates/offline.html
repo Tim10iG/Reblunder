@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% set bare = true %}
+{% block title %}Nicht erreichbar · REBLUNDER{% endblock %}
+{% block body %}
+<div class="login">
+  <p class="kicker">REBLUNDER</p>
+  <h1>Server nicht erreichbar</h1>
+  <p class="lede">Der Rechner, auf dem REBLUNDER läuft, antwortet nicht. Prüfe, ob er eingeschaltet ist und ob dein Gerät im selben Netz bzw. mit Tailscale verbunden ist.</p>
+  <div class="cta"><button class="primary" onclick="location.href='/'">Erneut versuchen</button></div>
+</div>
+{% endblock %}

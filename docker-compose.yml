@@ -1,0 +1,11 @@
+services:
+  trainer:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      CHESSTRAINER_USER: "DEIN_CHESSCOM_NAME"
+      CHESSTRAINER_PASSWORD: "ein-langes-passwort"
+    volumes:
+      - ./data:/app/data

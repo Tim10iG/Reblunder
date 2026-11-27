@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% set bare = true %}
+{% block title %}Anmelden · REBLUNDER{% endblock %}
+{% block body %}
+<div class="login">
+  <p class="kicker">REBLUNDER</p>
+  <h1>Anmelden</h1>
+  <form method="post">
+    <label>Passwort<input type="password" name="password" autofocus autocomplete="current-password" required></label>
+    {% if error %}<p class="msg bad" role="alert">Das Passwort stimmt nicht.</p>{% endif %}
+    <button class="primary" type="submit">Anmelden</button>
+  </form>
+</div>
+{% endblock %}
